@@ -1,0 +1,309 @@
+<!DOCTYPE html>
+<html 
+            
+            transition: all .3s ease;
+        }
+
+        li:hover {
+            background: #16213e;
+            transform: translateX(10px);
+        }
+
+        .task {
+            display: flex;
+            align-items: center;
+        }
+
+        .task input[type="checkbox"] {
+            margin-right: 10px;
+            transform: scale(1.5);
+        }
+
+        .task input[type="checkbox"]:checked + span {
+            text-decoration: line-through;
+            color: #888;
+        }
+
+        .progress-bar {
+            width: 100%;
+            background-color: #0f3460;
+            padding: 3px;
+            border-radius: 10px;
+            box-shadow: inset 0 1px 3px rgba(0, 0, 0, .2);
+            margin-top: 15px;
+        }
+
+        .progress {
+            display: block;
+            height: 22px;
+            background: linear-gradient(90deg, #4ecca3, #45b08c);
+            border-radius: 7px;
+            transition: width 500ms ease-in-out;
+            text-align: center;
+            line-height: 22px;
+            color: #1a1a2e;
+            font-weight: bold;
+        }
+
+        #confetti {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 9999;
+        }
+
+        .edit-buttons {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 10px;
+        }
+
+        .edit-button,
+        .delete-button,
+        .add-task-button,
+        .add-category-button,
+        .refresh-button {
+            background-color: #4ecca3;
+            color: #1a1a2e;
+            border: none;
+            padding: 5px 10px;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: all .3s ease;
+        }
+
+        .edit-button:hover,
+        .delete-button:hover,
+        .add-task-button:hover,
+        .add-category-button:hover,
+        .refresh-button:hover {
+            background-color: #45b08c;
+        }
+
+        .delete-button {
+            background-color: #ff6b6b;
+        }
+
+        .delete-button:hover {
+            background-color: #ff5252;
+        }
+
+        .add-task-input,
+        .add-category-input {
+            width: 100%;
+            padding: 5px;
+            margin-top: 10px;
+            border-radius: 5px;
+            border: none;
+        }
+
+        .edit-task-input {
+            background-color: #0f3460;
+            color: #fff;
+            border: none;
+            padding: 5px;
+            border-radius: 5px;
+            width: calc(100% - 10px);
+        }
+    </style>
+</head>
+<body>
+<div class="container">
+    <h1>Super Comprehensive Task Zapper!</h1>
+    <div id="dashboard"></div>
+    <div id="task-container"></div>
+    <div class="edit-buttons">
+        <button class="add-category-button" onclick="addNewCategory()">Add New Category</button>
+        <button class="refresh-button" onclick="refreshAndRearrangeTasks()">Refresh & Rearrange Tasks</button>
+    </div>
+</div>
+<canvas id="confetti"></canvas>
+<script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.5.1/dist/confetti.browser.min.js"></script>
+<script>
+    let taskData = {
+        "Zap It Now!": ["New refunds on Amazon pen", "Think of finesse", "Go bring Mom's treadmill downstairs", "Keep up to date with T-Mobile orders", "Check on pharmacies for you know what", "Call and see if we can get a hold of the doctor tomorrow maybe to talk to her", "Look over all my subscriptions if they're even worth it", "Do finances", "Visual studio code (how to create any application, create AI programs for flippers around there AI to go to application)", "Organize ChatGPT", "Text Sydney's Alexa"],
+        "Tonight's Mission": ["Figure out trading plan", "Go through this to-do list", "Maybe a second order from Temu"],
+        "Tomorrow's Adventure": ["See if CVS can transfer script", "Go over ChatGPT conversation about disputes", "Leave a message with Tim telling him to send script to Belleville", "Call Bank of America", "Go through powerful and get this stock stuff together", "Go through some disputes we need to speed up open AI cuz it's been messing up", "Go through our chat where it gave us good disputes and dispute some other stuff like that AI app", "Be working on a finesse because we're kind of desperate", "See if you can put Flipper Zero on VS Code"],
+        // ... (Other categories)
+    };
+
+    function createDashboard() {
+        const dashboard = document.getElementById('dashboard');
+        dashboard.innerHTML = '';
+        Object.keys(taskData).forEach(category => {
+            const item = document.createElement('div');
+            item.className = 'dashboard-item';
+            item.textContent = category;
+            item.onclick = () => {
+                document.getElementById(category).scrollIntoView({behavior: 'smooth'});
+                item.style.transform = 'scale(0.95)';
+                setTimeout(() => item.style.transform = 'scale(1)', 100);
+            };
+            dashboard.appendChild(item);
+        });
+    }
+
+    function createTaskList() {
+        const taskContainer = document.getElementById('task-container');
+        taskContainer.innerHTML = '';
+        Object.entries(taskData).forEach(([category, tasks]) => {
+            const categoryDiv = document.createElement('div');
+            categoryDiv.className = 'category';
+            categoryDiv.id = category;
+
+            const categoryTitle = document.createElement('h2');
+            categoryTitle.textContent = category;
+            categoryDiv.appendChild(categoryTitle);
+
+            const taskList = document.createElement('ul');
+            tasks.forEach((task, index) => {
+                const listItem = document.createElement('li');
+                const taskDiv = document.createElement('div');
+                taskDiv.className = 'task';
+
+                const checkbox = document.createElement('input');
+                checkbox.type = 'checkbox';
+                checkbox.onchange = (e) => {
+                    updateProgress();
+                    if (e.target.checked) {
+                        confetti({particleCount: 100, spread: 70, origin: {y: 0.6}});
+                    }
+                };
+
+                const taskText = document.createElement('span');
+                taskText.textContent = task;
+                taskDiv.appendChild(checkbox);
+                taskDiv.appendChild(taskText);
+
+                const editButton = document.createElement('button');
+                editButton.textContent = 'Edit';
+                editButton.className = 'edit-button';
+                editButton.onclick = () => editTask(category, index);
+
+                const deleteButton = document.createElement('button');
+                deleteButton.textContent = 'Delete';
+                deleteButton.className = 'delete-button';
+                deleteButton.onclick = () => deleteTask(category, index);
+
+                taskDiv.appendChild(editButton);
+                taskDiv.appendChild(deleteButton);
+                listItem.appendChild(taskDiv);
+                taskList.appendChild(listItem);
+            });
+
+            categoryDiv.appendChild(taskList);
+
+            const addTaskInput = document.createElement('input');
+            addTaskInput.type = 'text';
+            addTaskInput.placeholder = 'Add a new task';
+            addTaskInput.className = 'add-task-input';
+
+            const addTaskButton = document.createElement('button');
+            addTaskButton.textContent = 'Add Task';
+            addTaskButton.className = 'add-task-button';
+            addTaskButton.onclick = () => addTask(category, addTaskInput.value);
+
+            const editButtons = document.createElement('div');
+            editButtons.className = 'edit-buttons';
+            editButtons.appendChild(addTaskInput);
+            editButtons.appendChild(addTaskButton);
+
+            const deleteCategoryButton = document.createElement('button');
+            deleteCategoryButton.textContent = 'Delete Category';
+            deleteCategoryButton.className = 'delete-button';
+            deleteCategoryButton.onclick = () => deleteCategory(category);
+            editButtons.appendChild(deleteCategoryButton);
+
+            categoryDiv.appendChild(editButtons);
+
+            const progressBar = document.createElement('div');
+            progressBar.className = 'progress-bar';
+
+            const progress = document.createElement('span');
+            progress.className = 'progress';
+            progressBar.appendChild(progress);
+
+            categoryDiv.appendChild(progressBar);
+            taskContainer.appendChild(categoryDiv);
+        });
+
+        updateProgress();
+    }
+
+    function updateProgress() {
+        const categories = document.getElementsByClassName('category');
+        Array.from(categories).forEach(category => {
+            const tasks = category.getElementsByClassName('task');
+            const completedTasks = Array.from(tasks).filter(task => task.getElementsByTagName('input')[0].checked).length;
+            const progressPercentage = (completedTasks / tasks.length) * 100;
+            const progressBar = category.getElementsByClassName('progress')[0];
+            progressBar.style.width = `${progressPercentage}%`;
+            progressBar.textContent = `${Math.round(progressPercentage)}%`;
+        });
+    }
+
+    function addTask(category, taskText) {
+        if (taskText.trim() !== '') {
+            taskData[category].push(taskText);
+            createTaskList();
+            updateProgress();
+        }
+    }
+
+    function editTask(category, index) {
+        const taskElement = document.getElementById(category).getElementsByClassName('task')[index];
+        const taskText = taskElement.getElementsByTagName('span')[0];
+        const currentText = taskText.textContent;
+        const input = document.createElement('input');
+        input.type = 'text';
+        input.value = currentText;
+        input.className = 'edit-task-input';
+        taskText.replaceWith(input);
+        input.focus();
+        input.onblur = () => {
+            const newText = input.value.trim();
+            if (newText !== '') {
+                taskData[category][index] = newText;
+                createTaskList();
+                updateProgress();
+            } else {
+                input.replaceWith(taskText);
+            }
+        };
+    }
+
+    function deleteTask(category, index) {
+        taskData[category].splice(index, 1);
+        createTaskList();
+        updateProgress();
+    }
+
+    function addNewCategory() {
+        const categoryName = prompt('Enter the name of the new category:');
+        if (categoryName && categoryName.trim() !== '') {
+            taskData[categoryName] = [];
+            createDashboard();
+            createTaskList();
+            updateProgress();
+        }
+    }
+
+    function deleteCategory(category) {
+        if (confirm(`Are you sure you want to delete the category "${category}" and all its tasks?`)) {
+            delete taskData[category];
+            createDashboard();
+            createTaskList();
+            updateProgress();
+        }
+    }
+
+    function refreshAndRearrangeTasks() {
+;
+    createTaskList();
+    updateProgress();
+</script>
+</body>
+</html>
